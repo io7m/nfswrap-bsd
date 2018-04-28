@@ -15,6 +15,8 @@
 
 #include <vector>
 
+#define PROGRAM_NAME "nfswrap"
+
 static char error_buffer[_POSIX2_LINE_MAX];
 
 static int
@@ -28,14 +30,14 @@ find_nfsd_pids(std::vector<pid_t> &pids)
   kvm = kvm_openfiles(NULL, "/dev/null", NULL, O_RDONLY, error_buffer);
   if (kvm == NULL) {
     return_code = 0;
-    warnx("nfswrap: fatal: kvm_openfiles: %s", error_buffer);
+    warnx(PROGRAM_NAME ": fatal: kvm_openfiles: %s", error_buffer);
     goto EXIT_CLEANUP;
   }
 
   procs = kvm_getprocs(kvm, KERN_PROC_PROC, 0, &procs_count);
   if (procs == NULL) {
     return_code = 0;
-    warnx("nfswrap: fatal: kvm_getprocs: %s", error_buffer);
+    warnx(PROGRAM_NAME ": fatal: kvm_getprocs: %s", error_buffer);
     goto EXIT_CLEANUP;
   }
 
@@ -43,7 +45,7 @@ find_nfsd_pids(std::vector<pid_t> &pids)
     pid_t pid = procs[index].ki_pid;
     const char *name = procs[index].ki_comm;
     if (strcmp("nfsd", name) == 0) {
-      fprintf(stderr, "nfswrap: info: nfsd %d\n", pid);
+      fprintf(stderr, PROGRAM_NAME ": info: nfsd %d\n", pid);
       pids.push_back(pid);
     }
   }
@@ -58,7 +60,7 @@ find_nfsd_pids(std::vector<pid_t> &pids)
 static void
 signal_received(int signal)
 {
-  fprintf(stderr, "nfswrap: info: received %d\n", signal);
+  fprintf(stderr, PROGRAM_NAME ": info: received %d\n", signal);
 }
 
 int
@@ -72,7 +74,7 @@ main (int argc, char *argv[])
   const unsigned int wrapper_wait_time = 5;
 
   if (argc != 3) {
-    fprintf(stderr, "nfswrap: usage: rpcbind.sh nfsd.sh\n");
+    fprintf(stderr, PROGRAM_NAME ": usage: rpcbind.sh nfsd.sh\n");
     exit(1);
   }
 
@@ -82,7 +84,7 @@ main (int argc, char *argv[])
   wrapper_rpcbind_pid = fork();
   if (wrapper_rpcbind_pid == -1) {
     exit_code = 1;
-    warn("nfswrap: fatal: fork: rpcbind: %s", wrapper_rpcbind_name);
+    warn(PROGRAM_NAME ": fatal: fork: rpcbind: %s", wrapper_rpcbind_name);
     goto EXIT_CLEANUP;
   }
 
@@ -94,7 +96,7 @@ main (int argc, char *argv[])
   }
 
   for (unsigned int index = 0; index < wrapper_wait_time; ++index) {
-    fprintf(stderr, "nfswrap: info: waiting %d seconds for rpcbind to start\n", wrapper_wait_time - index);
+    fprintf(stderr, PROGRAM_NAME ": info: waiting %d seconds for rpcbind to start\n", wrapper_wait_time - index);
     int r = waitpid(wrapper_rpcbind_pid, &wrapper_status, WNOHANG);
     if (r == 0) {
       sleep(1);
@@ -102,7 +104,7 @@ main (int argc, char *argv[])
     if (r == -1) {
       exit_code = 1;
       wrapper_rpcbind_pid = -1;
-      warn("nfswrap: fatal: rpcbind not running");
+      warn(PROGRAM_NAME ": fatal: rpcbind not running");
       goto EXIT_CLEANUP;
     }
   }
@@ -110,7 +112,7 @@ main (int argc, char *argv[])
   wrapper_nfsd_pid = fork();
   if (wrapper_nfsd_pid == -1) {
     exit_code = 1;
-    warn("nfswrap: fatal: fork: nfsd: %s", wrapper_nfsd_name);
+    warn(PROGRAM_NAME ": fatal: fork: nfsd: %s", wrapper_nfsd_name);
     goto EXIT_CLEANUP;
   }
 
@@ -122,7 +124,7 @@ main (int argc, char *argv[])
   }
 
   for (unsigned int index = 0; index < wrapper_wait_time; ++index) {
-    fprintf(stderr, "nfswrap: info: waiting %d seconds for nfsd wrapper to finish\n", wrapper_wait_time - index);
+    fprintf(stderr, PROGRAM_NAME ": info: waiting %d seconds for nfsd wrapper to finish\n", wrapper_wait_time - index);
     int r = waitpid(wrapper_rpcbind_pid, &wrapper_status, WNOHANG | WEXITED);
     if (r == 0) {
       sleep(1);
@@ -136,22 +138,22 @@ main (int argc, char *argv[])
 
   if (nfsd_pids.size() == 0) {
     exit_code = 1;
-    warnx("nfswrap: error: could not find any nfsd pids - assuming nfsd is broken!");
+    warnx(PROGRAM_NAME ": error: could not find any nfsd pids - assuming nfsd is broken!");
     goto EXIT_CLEANUP;
   }
 
-  fprintf(stderr, "nfswrap: info: waiting until rpcbind terminates\n");
+  fprintf(stderr, PROGRAM_NAME ": info: waiting until rpcbind terminates\n");
   signal(SIGHUP, &signal_received);
   signal(SIGINT, &signal_received);
   signal(SIGTERM, &signal_received);
   waitpid(wrapper_rpcbind_pid, &wrapper_status, WEXITED);
-  fprintf(stderr, "nfswrap: info: rpcbind terminated or nfswrap interrupted\n");
+  fprintf(stderr, PROGRAM_NAME ": info: rpcbind terminated or nfswrap interrupted\n");
 
   EXIT_CLEANUP:
   if (wrapper_rpcbind_pid != -1) {
-    fprintf(stderr, "nfswrap: info: cleanup rpcbind: SIGTERM %d\n", wrapper_rpcbind_pid);
+    fprintf(stderr, PROGRAM_NAME ": info: cleanup rpcbind: SIGTERM %d\n", wrapper_rpcbind_pid);
     if (kill(wrapper_rpcbind_pid, SIGTERM) == -1) {
-      warn("nfswrap: error: could not send SIGTERM to rpcbind (%d)", wrapper_rpcbind_pid);
+      warn(PROGRAM_NAME ": error: could not send SIGTERM to rpcbind (%d)", wrapper_rpcbind_pid);
       exit_code = 1;
     }
   }
@@ -159,9 +161,9 @@ main (int argc, char *argv[])
   for (unsigned int index = 0; index < nfsd_pids.size(); ++index) {
     pid_t nfsd_pid = nfsd_pids.at(index);
 
-    fprintf(stderr, "nfswrap: info: cleanup nfsd: SIGUSR1 %d\n", nfsd_pid);
+    fprintf(stderr, PROGRAM_NAME ": info: cleanup nfsd: SIGUSR1 %d\n", nfsd_pid);
     if (kill(nfsd_pid, SIGUSR1) == -1) {
-      warn("nfswrap: error: could not send SIGUSR1 to nfsd (%d)", nfsd_pid);
+      warn(PROGRAM_NAME ": error: could not send SIGUSR1 to nfsd (%d)", nfsd_pid);
       exit_code = 1;
     }
   }
