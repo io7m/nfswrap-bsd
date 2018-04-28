@@ -1,7 +1,7 @@
 nfswrap-bsd
 ===
 
-A wrapper for the [https://man.openbsd.org/nfsd](BSD nfsd) that allows for
+A wrapper for the [BSD nfsd](https://man.openbsd.org/nfsd) that allows for
 [process supervision](http://smarden.org/runit/).
 
 Requirements
