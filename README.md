@@ -14,14 +14,14 @@ Compiling
 ===
 
 ```
-make && sudo cp nfswrap /usr/local/bin/nfswrap
+make && sudo cp nfsd-wrap /usr/local/bin/nfsd-wrap
 ```
 
 Usage
 ===
 
 ```
-nfswrap: usage: rpcbind.sh nfsd.sh
+nfsd-wrap: usage: rpcbind.sh nfsd.sh
 ```
 
 `rpcbind.sh` must be a program that starts `rpcbind` and exits when `rpcbind` exits. An
@@ -43,9 +43,9 @@ exec /usr/sbin/nfsd -h 127.0.0.1 -t -n 4
 This works because the BSD `nfsd` unconditionally forks into the background and cannot
 be forced into the foreground.
 
-The `nfswrap` program first starts `rpcbind.sh`, watches `rpcbind.sh` for five seconds,
+The `nfsd-wrap` program first starts `rpcbind.sh`, watches `rpcbind.sh` for five seconds,
 then starts `nfsd.sh`. If `rpcbind` crashes or fails to start, or if `nfsd` crashes or
-fails to start, `nfswrap` attempts to clean up all processes and then exits. If `nfswrap`
+fails to start, `nfsd-wrap` attempts to clean up all processes and then exits. If `nfsd-wrap`
 receives `SIGTERM`, `SIGINT`, or `SIGHUP`, then it cleans up all `rpcbind` and `nfsd`
 processes and then exits.
 

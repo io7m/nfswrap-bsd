@@ -15,7 +15,7 @@
 
 #include <vector>
 
-#define PROGRAM_NAME "nfswrap"
+#define PROGRAM_NAME "nfsd-wrap"
 
 static char error_buffer[_POSIX2_LINE_MAX];
 
@@ -91,7 +91,7 @@ main (int argc, char *argv[])
   if (wrapper_rpcbind_pid == 0) {
     char *rpc_args[2] = { wrapper_rpcbind_name, NULL };
     if (execv(rpc_args[0], rpc_args) == -1) {
-      err(1, "nfswrap (rpcbind child): fatal: execv: %s", wrapper_rpcbind_name);
+      err(1, PROGRAM_NAME " (rpcbind child): fatal: execv: %s", wrapper_rpcbind_name);
     }
   }
 
@@ -119,7 +119,7 @@ main (int argc, char *argv[])
   if (wrapper_nfsd_pid == 0) {
     char *nfs_args[2] = { wrapper_nfsd_name, NULL };
     if (execv(nfs_args[0], nfs_args) == -1) {
-      err(1, "nfswrap (nfsd child): fatal: execv: %s", wrapper_nfsd_name);
+      err(1, PROGRAM_NAME " (nfsd child): fatal: execv: %s", wrapper_nfsd_name);
     }
   }
 
@@ -147,7 +147,7 @@ main (int argc, char *argv[])
   signal(SIGINT, &signal_received);
   signal(SIGTERM, &signal_received);
   waitpid(wrapper_rpcbind_pid, &wrapper_status, WEXITED);
-  fprintf(stderr, PROGRAM_NAME ": info: rpcbind terminated or nfswrap interrupted\n");
+  fprintf(stderr, PROGRAM_NAME ": info: rpcbind terminated or " PROGRAM_NAME " interrupted\n");
 
   EXIT_CLEANUP:
   if (wrapper_rpcbind_pid != -1) {
