@@ -1,13 +1,16 @@
+CC=      clang++
+CC_ARGS= -g -W -Wall -pedantic --std=c++11
+
 all: nfswrap rpcbind nfsd
 
 nfswrap: nfswrap.cpp
-	clang++ -g -W -Wall -pedantic --std=c++11 -o nfswrap nfswrap.cpp -lkvm
+	$(CC) $(CC_ARGS) -o nfswrap nfswrap.cpp -lkvm
 
 rpcbind: rpcbind.cpp
-	clang++ -g -W -Wall -pedantic --std=c++11 -o rpcbind rpcbind.cpp
+	$(CC) $(CC_ARGS) -o rpcbind rpcbind.cpp
 
 nfsd: nfsd.cpp
-	clang++ -g -W -Wall -pedantic --std=c++11 -o nfsd nfsd.cpp
+	$(CC) $(CC_ARGS) -o nfsd nfsd.cpp
 
 clean:
 	rm -f nfswrap rpcbind nfsd
