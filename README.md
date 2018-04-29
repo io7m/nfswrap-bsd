@@ -21,31 +21,37 @@ Usage
 ===
 
 ```
-nfsd-wrap: usage: rpcbind.sh nfsd.sh
+nfsd-wrap: usage: nfsd.sh
 ```
 
-`rpcbind.sh` must be a program that starts `rpcbind` and exits when `rpcbind` exits. An
-example of a correct `rpcbind.sh` program might be:
-
-```
-#!/bin/sh
-exec /usr/sbin/rpcbind -d -h 127.0.0.1 -s
-```
-
-`nfsd.sh` must be a program that starts `nfsd` and exits immediately. An example of
+`nfsd.sh` must be a program that starts `nfsd` and waits for it to exit. An example of
 a correct `nfsd.sh` program might be:
 
 ```
 #!/bin/sh
-exec /usr/sbin/nfsd -h 127.0.0.1 -t -n 4
+exec /usr/sbin/nfsd --debug -h 127.0.0.1 -t -n 4
 ```
 
-This works because the BSD `nfsd` unconditionally forks into the background and cannot
-be forced into the foreground.
+The `--debug` flag is an undocumented (and dangerous) flag to the BSD
+`nfsd`. When `nfsd` is run with the `--debug` flag, it will not fork
+into the background. Unfortunately, it will also do something rather
+dangerous as will now be explained.
 
-The `nfsd-wrap` program first starts `rpcbind.sh`, watches `rpcbind.sh` for five seconds,
-then starts `nfsd.sh`. If `rpcbind` crashes or fails to start, or if `nfsd` crashes or
-fails to start, `nfsd-wrap` attempts to clean up all processes and then exits. If `nfsd-wrap`
-receives `SIGTERM`, `SIGINT`, or `SIGHUP`, then it cleans up all `rpcbind` and `nfsd`
-processes and then exits.
+In normal operation `nfsd` will declare some signal handlers that
+ignore signals such as `SIGTERM`, `SIGINT`, `SIGHUP`. During operation,
+`nfsd` allocates some kernel resources that are _only_ cleaned up
+if the process exits by receiving a `SIGUSR1` signal. If the kernel
+resources that `nfsd` allocates are not cleaned up, the `nfsd` process
+will simply crash the next time it is run. There appears to be no way
+to fix this beyond rebooting the entire system. Unfortunately, when the
+`--debug` flag is used, the `nfsd` process does not set up any signal
+handlers that ignore signals other than `SIGUSR1`, meaning that it is
+very easy to shut down the `nfsd` process incorrectly and effectively
+prevent the process from running again until the next reboot.
+
+The `nfsd-wrap` program acts as a wall between the real `nfsd` process
+and the process supervision system (such as `runit`). If the `nfsd-wrap`
+process is sent `SIGINT`, `SIGHUP`, `SIGTERM`, or `SIGUSR1`, it sends
+`SIGUSR1` to the `nfsd` process. This ensures that the correct cleanup
+occurs.
 
